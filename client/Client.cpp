@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <sstream>
 #include <fstream>
+#include <curl/curl.h>
 
 using namespace std;
 
@@ -68,9 +69,10 @@ string getSummary(string text) {
     }
 
     stringstream ss;
-    ss << "GET /sum/" << text << " HTTP/1.0\r\n"
+    ss << "GET /sum/" << text << " HTTP/1.1\r\n"
     << "Host: http://127.0.0.1:5000"
     << "Accept: application/json\r\n"
+    << "User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729)"
     << "\r\n\r\n";
 
     string request = ss.str();
@@ -90,6 +92,32 @@ string getSummary(string text) {
     return res;
 }
 
+static size_t WriteCallBack(void *contents, size_t size, size_t nmemb, void *userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+int getSummaryCurl(string text) {
+    CURL *curl;
+    CURLcode res;
+    std::string readBuffer;
+
+    string url = "http://127.0.0.1:5000/sum/" + text;
+
+    curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallBack);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        std::cout << readBuffer << std::endl;
+    }
+
+    return 0;
+}
+
 int main() {
 
     string text;
@@ -105,11 +133,9 @@ int main() {
 
     loadingBar();
 
-    string summary = getSummary(text);
-
-    std::cout << "text: " << text << endl;
-    std::cout << "summary of text: " << summary << endl;
+    getSummaryCurl(text);
 
     return 0;
 }
+
 
