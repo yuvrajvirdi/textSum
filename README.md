@@ -22,5 +22,6 @@ cd server && python3 -m venv venv
 
 3. Run client
 
-# Use
-
+```bash
+cd client && ./Client
+```
